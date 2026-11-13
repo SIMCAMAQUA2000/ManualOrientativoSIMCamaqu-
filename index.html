@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Orientativo Digital — S.I.M. Camaquã/RS | Decreto Nº 28.XXX/2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          colors: {
+            sim: {
+              dark: '#022c22',
+              primary: '#047857',
+              light: '#ecfdf5',
+              accent: '#d97706',
+              gold: '#f59e0b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* ===================================================================== */
+    /* VINHETA DE ABERTURA CINEMATOGRÁFICA (CANVAS + SVG SELO OFICIAL)       */
+    /* ===================================================================== */
+    #intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: radial-gradient(circle at center, #065f46 0%, #022c22 65%, #011812 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.9s ease;
+    }
+
+    #intro-overlay.intro-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #intro-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .seal-container {
+      position: relative;
+      z-index: 10;
+      opacity: 0;
+      transform: scale(0.75) rotate(-8deg);
+      animation: sealEntrance 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+    }
+
+    @keyframes sealEntrance {
+      0% { opacity: 0; transform: scale(0.65) rotate(-12deg); filter: blur(8px); }
+      60% { opacity: 1; transform: scale(1.04) rotate(2deg); filter: blur(0px); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0px); }
+    }
+
+    .seal-glow {
+      position: absolute;
+      inset: -26px;
+      border-radius: 9999px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.38) 0%, rgba(16, 185, 129, 0.18) 50%, transparent 75%);
+      animation: pulseGlow 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    .seal-sheen {
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .seal-sheen::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -120%;
+      width: 60%;
+      height: 200%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.48) 50%, rgba(255,255,255,0) 100%);
+      transform: rotate(25deg);
+      animation: sheenSweep 3.4s ease-in-out 1.3s infinite;
+    }
+
+    @keyframes sheenSweep {
+      0% { left: -120%; }
+      45%, 100% { left: 180%; }
+    }
+
+    .intro-text-block {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: textRise 1s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
+    }
+
+    @keyframes textRise {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .intro-progress-bar {
+      width: 0%;
+      animation: progressFill 5.2s linear forwards;
+    }
+
+    @keyframes progressFill {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Estilos de Impressão / Exportação PDF */
+    @media print {
+      #intro-overlay, #sidebar-nav, #mobile-header, #search-bar-container, #replay-intro-btn, .no-print {
+        display: none !important;
+      }
+      body { background: #fff !important; color: #000 !important; }
+      main { margin-left: 0 !important; padding: 0 !important; max-width: 100% !important; }
+      section { break-inside: avoid; box-shadow: none !important; border: 1px solid #cbd5e1 !important; margin-bottom: 1.25rem !important; }
+      details { open: true; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-emerald-200 selection:text-emerald-950">
+
+  <!-- ===================================================================== -->
+  <!-- TELA DE ABERTURA CINEMATOGRÁFICA / VINHETA OFICIAL (CANVAS + SVG)     -->
+  <!-- ===================================================================== -->
+  <div id="intro-overlay" role="dialog" aria-modal="true" aria-label="Apresentação Oficial do Serviço de Inspeção Municipal de Camaquã">
+    <canvas id="intro-canvas"></canvas>
+
+    <!-- Botão Superior Direito: Pular Abertura -->
+    <div class="absolute top-5 right-5 z-20 flex items-center gap-3">
+      <button
+        id="skip-intro-btn"
+        onclick="closeIntro()"
+        class="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-emerald-50 border border-white/20 backdrop-blur-md text-xs sm:text-sm font-medium tracking-wide transition-all flex items-center gap-2 shadow-lg cursor-pointer"
+      >
+        <span>Pular Abertura</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Conteúdo Central da Vinheta -->
+    <div class="relative z-10 flex flex-col items-center px-6 text-center max-w-2xl mx-auto">
+      <div class="seal-container mb-7">
+        <div class="seal-glow"></div>
+        <div class="relative w-64 h-64 sm:w-72 sm:h-72 rounded-full bg-white shadow-[0_0_60px_rgba(16,185,129,0.45)] p-2 flex items-center justify-center border-4 border-amber-400/80">
+          <div class="seal-sheen"></div>
+          <!-- Selo Oficial Circular Duplo: Secretaria Municipal de Desenvolvimento Rural - CAMAQUÃ-RS -->
+          <svg viewBox="0 0 400 400" class="w-full h-full" xmlns="http://www.w3.org/2000/svg" aria-label="Carimbo Oficial SIM Camaquã-RS">
+            <defs>
+              <path id="intro-top-outer" d="M 48,200 A 152,152 0 1,1 352,200" />
+              <path id="intro-bottom-outer" d="M 38,205 A 162,162 0 0,0 362,205" />
+              <path id="intro-top-inner" d="M 88,200 A 112,112 0 1,1 312,200" />
+            </defs>
+            <circle cx="200" cy="200" r="196" fill="#ffffff" />
+            <circle cx="200" cy="200" r="142" fill="none" stroke="#0f172a" stroke-width="3.5" />
+            <circle cx="200" cy="200" r="136" fill="none" stroke="#0f172a" stroke-width="1.2" opacity="0.35" />
+            <text fill="#0f172a" font-family="'Playfair Display', Georgia, serif" font-weight="800" font-size="25.5" letter-spacing="1.6">
+              <textPath href="#intro-top-outer" startOffset="50%" text-anchor="middle">SECRETARIA MUNICIPAL DE</textPath>
+            </text>
+            <text fill="#0f172a" font-family="'Playfair Display', Georgia, serif" font-weight="800" font-size="24.5" letter-spacing="1.4">
+              <textPath href="#intro-bottom-outer" startOffset="50%" text-anchor="middle">DESENVOLVIMENTO RURAL</textPath>
+            </text>
+            <text fill="#0f172a" font-family="'Playfair Display', Georgia, serif" font-weight="700" font-size="23" letter-spacing="1.8">
+              <textPath href="#intro-top-inner" startOffset="50%" text-anchor="middle">CAMAQUÃ-RS</textPath>
+            </text>
+            <text x="200" y="210" text-anchor="middle" fill="#0f172a" font-family="'Inter', Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="2.5">INSPECIONADO</text>
+            <text x="200" y="264" text-anchor="middle" fill="#064e3b" font-family="'Inter', Arial, sans-serif" font-weight="800" font-size="44" letter-spacing="3">000</text>
+            <text x="200" y="306" text-anchor="middle" fill="#0f172a" font-family="'Inter', Arial, sans-serif" font-weight="700" font-size="26" letter-spacing="4">S.I.M</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="intro-text-block space-y-2.5">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-semibold uppercase tracking-widest">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          Prefeitura Municipal de Camaquã • RS
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          Serviço de Inspeção Municipal
+        </h1>
+        <p class="text-sm sm:text-base text-emerald-100/90 max-w-lg mx-auto font-normal">
+          Guia Orientativo Completo de Registro, Boas Práticas, Rotulagem e Fiscalização • <span class="text-amber-300 font-semibold">Decreto Nº 28.XXX/2026</span> (Lei nº 2.775/2025)
+        </p>
+
+        <div class="pt-4 flex flex-col items-center gap-3">
+          <div class="w-56 sm:w-64 h-1.5 bg-white/15 rounded-full overflow-hidden">
+            <div id="intro-progress" class="intro-progress-bar h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-emerald-300 rounded-full"></div>
+          </div>
+          <button
+            onclick="closeIntro()"
+            class="mt-1 px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-sm shadow-lg shadow-emerald-950/50 transition-all active:scale-95 cursor-pointer"
+          >
+            Acessar Manual Orientativo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- CABEÇALHO MOBILE / BARRA SUPERIOR                                     -->
+  <!-- ===================================================================== -->
+  <header id="mobile-header" class="lg:hidden sticky top-0 z-40 bg-emerald-950 text-white shadow-md px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <button id="menu-toggle" class="p-2 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-white focus:outline-none" aria-label="Abrir Menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <div>
+        <span class="text-[10px] uppercase tracking-wider text-amber-400 font-bold block">SMDR • Camaquã/RS</span>
+        <h1 class="text-sm font-bold leading-tight">Manual Digital S.I.M.</h1>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="replayIntro()" title="Rever Abertura" class="p-2 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-amber-300 text-xs font-semibold flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="hidden sm:inline">Abertura</span>
+      </button>
+      <button onclick="window.print()" title="Imprimir Manual" class="p-2 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-white">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-xs"></div>
+
+  <!-- ===================================================================== -->
+  <!-- MENU LATERAL DE NAVEGAÇÃO (SIDEBAR)                                   -->
+  <!-- ===================================================================== -->
+  <aside id="sidebar-nav" class="fixed top-0 left-0 z-50 h-screen w-72 bg-emerald-950 text-slate-100 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0 border-r border-emerald-900 shadow-2xl">
+    <div class="p-5 border-b border-emerald-900 bg-gradient-to-b from-emerald-900 to-emerald-950">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 rounded-full bg-white p-1 shrink-0 shadow-md border-2 border-amber-400 flex items-center justify-center">
+          <svg viewBox="0 0 100 100" class="w-full h-full">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="#0f172a" stroke-width="3"/>
+            <circle cx="50" cy="50" r="36" fill="none" stroke="#0f172a" stroke-width="2"/>
+            <text x="50" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#0f172a">S.I.M.</text>
+            <text x="50" y="63" text-anchor="middle" font-size="13" font-weight="800" fill="#064e3b">000</text>
+          </svg>
+        </div>
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400 block">SMDR • Camaquã/RS</span>
+          <h2 class="text-base font-extrabold text-white leading-tight">Manual S.I.M.</h2>
+          <p class="text-[11px] text-emerald-300">Decreto Nº 28.XXX/2026</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button
+          id="replay-intro-btn"
+          onclick="replayIntro()"
+          class="px-2.5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Rever Abertura
+        </button>
+        <button
+          onclick="window.print()"
+          class="px-2.5 py-2 rounded-lg bg-emerald-800/80 hover:bg-emerald-700 border border-emerald-700 text-emerald-100 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          Imprimir / PDF
+        </button>
+      </div>
+
+      <!-- Progresso Global dos Checklists -->
+      <div class="mt-3 pt-3 border-t border-emerald-900/80">
+        <div class="flex justify-between text-[11px] text-emerald-300 mb-1">
+          <span>Autoavaliação Geral</span>
+          <span id="sidebar-progress-text" class="font-bold text-amber-300">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-emerald-900 rounded-full overflow-hidden">
+          <div id="sidebar-progress-bar" class="h-full bg-amber-400 transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto p-3.5 space-y-1 text-xs sm:text-sm">
+      <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-400/80 mb-1.5">Sumário Executivo</p>
+      <a href="#painel-prazos" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-amber-200 font-medium transition">
+        <span class="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-bold flex items-center justify-center">⏱</span>
+        <span>Painel de Prazos Críticos</span>
+      </a>
+      <a href="#modulo-1" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">1</span>
+        <span>Disposições, Comércio & REF</span>
+      </a>
+      <a href="#modulo-2" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">2</span>
+        <span>Classificação & Cadeias</span>
+      </a>
+      <a href="#modulo-3" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">3</span>
+        <span>Registro, Reformas & Transferência</span>
+      </a>
+      <a href="#modulo-4" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">4</span>
+        <span>Produtos, Rótulos & Carimbos</span>
+      </a>
+      <a href="#modulo-5" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">5</span>
+        <span>Higiene, BPF & 19 PACs</span>
+      </a>
+      <a href="#modulo-6" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">6</span>
+        <span>Inspeção & Laboratório</span>
+      </a>
+      <a href="#modulo-7" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">7</span>
+        <span>Trânsito & Transporte</span>
+      </a>
+      <a href="#modulo-8" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-emerald-100 transition">
+        <span class="w-5 h-5 rounded-md bg-emerald-800 text-emerald-300 text-[11px] font-bold flex items-center justify-center">8</span>
+        <span>Infrações, Multas & PAS</span>
+      </a>
+      <a href="#ferramentas-praticas" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-emerald-900/80 text-amber-200 font-medium transition">
+        <span class="w-5 h-5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-bold flex items-center justify-center">🛠</span>
+        <span>Checklists & Simuladores</span>
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-emerald-900 bg-emerald-950/90 text-[11px] text-emerald-400">
+      <p class="font-semibold text-emerald-200">Secretaria Mun. de Desenvolvimento Rural</p>
+      <p class="mt-0.5">Lei nº 2.775/2025 • Decreto 28.XXX/2026</p>
+    </div>
+  </aside>
+
+  <!-- ===================================================================== -->
+  <!-- CONTEÚDO PRINCIPAL DO MANUAL                                          -->
+  <!-- ===================================================================== -->
+  <main class="lg:ml-72 min-h-screen pb-20">
+    <!-- Banner Superior Institucional + Busca -->
+    <div class="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-900 text-white px-6 py-9 sm:px-10 shadow-lg relative overflow-hidden">
+      <div class="max-w-5xl mx-auto relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-2">
+            <div class="inline-flex flex-wrap items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-amber-300">
+              <span>DECRETO Nº 28.XXX/2026</span>
+              <span>•</span>
+              <span>LEI MUNICIPAL Nº 2.775/2025</span>
+              <span>•</span>
+              <span>CAMAQUÃ-RS</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">
+              Manual Orientativo Digital — S.I.M.
+            </h1>
+            <p class="text-emerald-100 text-sm sm:text-base max-w-2xl leading-relaxed">
+              Guia técnico e prático do Serviço de Inspeção Municipal para produtores rurais, agroindústrias familiares, responsáveis técnicos e estabelecimentos de produtos de origem animal.
+            </p>
+          </div>
+
+          <div class="hidden lg:flex flex-col items-end gap-2 shrink-0">
+            <button
+              onclick="replayIntro()"
+              class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold text-sm shadow-md transition flex items-center gap-2 cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Rever Abertura Oficial</span>
+            </button>
+            <span class="text-xs text-emerald-200">Vinheta Institucional SMDR</span>
+          </div>
+        </div>
+
+        <!-- Barra de Pesquisa em Tempo Real -->
+        <div id="search-bar-container" class="mt-6 max-w-2xl">
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-emerald-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              id="manual-search"
+              placeholder="Buscar no decreto (ex: microqueijaria, 250 litros, contraprova, 48 horas, TAC, URM, leite cru, 82,2)..."
+              class="w-full pl-11 pr-24 py-3.5 rounded-2xl bg-white text-slate-900 placeholder-slate-400 shadow-xl focus:outline-none focus:ring-4 focus:ring-amber-400/50 text-sm"
+            >
+            <button
+              id="clear-search"
+              onclick="clearSearch()"
+              class="hidden absolute inset-y-1.5 right-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold"
+            >
+              Limpar
+            </button>
+          </div>
+          <p id="search-status" class="text-xs text-amber-200 mt-2 hidden"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-8 pt-8 space-y-10" id="modules-container">
+
+      <!-- ================================================================= -->
+      <!-- PAINEL RÁPIDO DE PRAZOS CRÍTICOS DO DECRETO                       -->
+      <!-- ================================================================= -->
+      <section id="painel-prazos" class="searchable-module bg-white rounded-3xl shadow-sm border border-amber-200/90 p-6 sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-900 text-xs font-extrabold uppercase">Referência Rápida</span>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Painel de Prazos Críticos do Decreto</h2>
+          </div>
+          <span class="text-xs text-slate-500">Fique atento para não perder direitos ou sofrer autuações</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">12 horas</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Escala em REF</span>
+            <span class="text-[10px] text-slate-500">Antecedência mínima (Art. 9º, §9º)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">24 horas</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Aviso de Abate</span>
+            <span class="text-[10px] text-slate-500">Ou chegada de animais (Art. 68, VI)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200">
+            <span class="text-xl font-extrabold text-rose-700 block">48 horas</span>
+            <span class="text-[11px] font-semibold text-rose-900 block mt-0.5">Pedir Contraprova</span>
+            <span class="text-[10px] text-rose-700">Prazo preclusivo após laudo (Art. 107)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">5 dias úteis</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Plano de Ação</span>
+            <span class="text-[10px] text-slate-500">Após análise não conforme (Art. 106)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">15 dias</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Defesa ou Recurso</span>
+            <span class="text-[10px] text-slate-500">Auto de Infração / Junta (Arts. 135/139)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">30 dias</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Novo RT / Multa</span>
+            <span class="text-[10px] text-slate-500">Substituir RT ou pagar multa (Arts. 68/140)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">30 dias úteis</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Análise de Produto</span>
+            <span class="text-[10px] text-slate-500">Prazo do SIM ou transferência (Arts. 31/50)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <span class="text-xl font-extrabold text-amber-800 block">6 meses</span>
+            <span class="text-[11px] font-semibold text-amber-900 block mt-0.5">Concluir Registro</span>
+            <span class="text-[10px] text-amber-800">Sob pena de arquivamento (Art. 28, §4º)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">1 ano</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Guarda PAC / Parada</span>
+            <span class="text-[10px] text-slate-500">Registros PAC e paralisação máx. (Arts. 36/88)</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-xl font-extrabold text-emerald-800 block">2 anos</span>
+            <span class="text-[11px] font-semibold text-slate-700 block mt-0.5">Atualizar Carimbos</span>
+            <span class="text-[10px] text-slate-500">Adequação de matrizes (Art. 65, §3º)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 1: DISPOSIÇÕES PRELIMINARES, COMÉRCIO & REF                -->
+      <!-- ================================================================= -->
+      <section id="modulo-1" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 01 • Arts. 1º ao 10</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Disposições Preliminares, Competências e Âmbito Comercial</h2>
+        </div>
+
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+          O <strong>Decreto Nº 28.XXX/2026</strong> regulamenta a <strong>Lei Municipal nº 2.775/2025</strong> e institui as normas oficiais para a inspeção industrial e sanitária dos produtos de origem animal em Camaquã-RS. A execução técnica é privativa de <strong>Médico Veterinário</strong> do quadro efetivo (Coordenador do SIM), sob supervisão da Secretaria Municipal de Desenvolvimento Rural (SMDR).
+        </p>
+
+        <!-- Onde posso vender? -->
+        <h3 class="font-bold text-slate-900 text-base mb-3">1.1. Onde posso comercializar meus produtos? (Art. 2º, §§ 4º a 6º)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <span class="text-xs font-extrabold uppercase text-emerald-700">Escopo Padrão</span>
+            <h4 class="font-bold text-emerald-950 text-base mt-1">Todo o Município de Camaquã</h4>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              O registro no SIM Camaquã autoriza imediatamente a venda em açougues, mercados, feiras, restaurantes e programas institucionais em todo o território municipal.
+            </p>
+          </div>
+          <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200">
+            <span class="text-xs font-extrabold uppercase text-sky-700">Âmbito Regional / Estadual</span>
+            <h4 class="font-bold text-sky-950 text-base mt-1">Consórcios & SUSAF-RS</h4>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Permite vender para outros municípios do Rio Grande do Sul desde que o SIM Camaquã e o estabelecimento obtenham adesão/equivalência junto a Consórcios Intermunicipais ou ao <strong>SUSAF-RS</strong>.
+            </p>
+          </div>
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <span class="text-xs font-extrabold uppercase text-amber-700">Âmbito Nacional</span>
+            <h4 class="font-bold text-amber-950 text-base mt-1">SISBI-POA / SUASA</h4>
+            <p class="text-xs text-slate-700 mt-1.5 leading-relaxed">
+              Autoriza a comercialização em todo o território nacional mediante reconhecimento de equivalência do SIM Camaquã junto ao Sistema Brasileiro de Inspeção (MAPA).
+            </p>
+          </div>
+        </div>
+
+        <!-- Articulação Institucional & Fiscalização Orientadora -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <h4 class="font-bold text-slate-900 text-sm mb-2">🤝 SIM x Vigilância Sanitária (VISA) x SIF/SIE</h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
+              <li><strong>Indústria / Agroindústria:</strong> Fiscalizada pelo <strong>SIM</strong> (ou pelo SIE/RS e SIF/MAPA, que são isentos de registro duplicado no SIM).</li>
+              <li><strong>Comércio Varejista (Supermercados, Padarias):</strong> Fiscalizado pela <strong>Vigilância Sanitária Municipal (VISA)</strong> quanto à exposição e armazenamento, com atuação suplementar do SIM.</li>
+              <li><strong>Entrada de Produtos de Fora:</strong> Só podem entrar e ser vendidos em Camaquã produtos de fora que tenham <strong>SIF, SIE ou SIM com equivalência SUSAF/SISBI</strong>.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-emerald-950 text-white">
+            <h4 class="font-bold text-amber-300 text-sm mb-2">🛡️ Fiscalização Orientadora (Art. 2º, § 1º)</h4>
+            <p class="text-xs text-emerald-100 leading-relaxed">
+              Para <strong>Microempresas (ME), Empresas de Pequeno Porte (EPP) e Agroindústrias Familiares</strong>, a fiscalização observa os princípios da razoabilidade e proporcionalidade:
+            </p>
+            <div class="mt-3 p-3 rounded-xl bg-white/10 text-xs text-emerald-50">
+              <strong>Regra da Orientação Prévia:</strong> Antes de aplicar multas pecuniárias, o SIM assegura procedimento orientado e prazo prévio para adequação — <em>salvo nos casos de risco iminente ou flagrante à saúde pública ou fraude</em>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Regime Especial de Fiscalização (REF) -->
+        <details class="group rounded-2xl border border-rose-200 bg-rose-50/50 p-4">
+          <summary class="font-bold text-rose-950 text-sm cursor-pointer flex items-center justify-between">
+            <span>🚨 O que é o Regime Especial de Fiscalização (REF)? (Art. 9º)</span>
+            <span class="text-xs text-rose-700 group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-rose-200 text-xs text-slate-700 space-y-2 leading-relaxed">
+            <p>É um conjunto temporário de restrições e acompanhamento rigoroso aplicado quando há indício de operação irregular, interdição, suspeita de fraude, <strong>recorrência da mesma não conformidade (3 vezes em 12 meses)</strong> ou análises não conformes de produto ou água.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Agendamento obrigatório:</strong> Em REF, a empresa deve agendar sua escala de produção com o SIM com antecedência mínima de <strong>12 horas</strong>.</li>
+              <li><strong>Para sair do REF (Análise não conforme):</strong> Recolher os produtos (recall), apresentar Laudo de Ação Corretiva/Preventiva em até <strong>10 dias úteis</strong> e produzir lote experimental apreendido cautelarmente até laudo laboratorial conforme.</li>
+              <li><strong>Para sair do REF (Demais causas):</strong> Apresentar medidas corretivas em até <strong>15 dias úteis</strong> para verificação em vistoria fiscal.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 2: CLASSIFICAÇÃO DOS ESTABELECIMENTOS & FILTRO POR CADEIA  -->
+      <!-- ================================================================= -->
+      <section id="modulo-2" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-3">
+            <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 02 • Arts. 11 ao 16</span>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Classificação dos Estabelecimentos por Cadeia</h2>
+          </div>
+        </div>
+
+        <p class="text-slate-600 text-sm mb-4">
+          Selecione abaixo a sua cadeia produtiva para visualizar as classificações oficiais previstas no Decreto e as regras específicas de operação:
+        </p>
+
+        <!-- Botões de Filtro Interativo por Cadeia -->
+        <div class="flex flex-wrap gap-2 mb-6 no-print" id="chain-filters">
+          <button onclick="filterChain('todas', this)" class="chain-btn active px-3.5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold shadow-xs cursor-pointer">Todas as Cadeias</button>
+          <button onclick="filterChain('carnes', this)" class="chain-btn px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">🥩 Carnes e Derivados</button>
+          <button onclick="filterChain('leite', this)" class="chain-btn px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">🧀 Leite e Microqueijaria</button>
+          <button onclick="filterChain('pescado', this)" class="chain-btn px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">🐟 Pescado e Derivados</button>
+          <button onclick="filterChain('ovos', this)" class="chain-btn px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">🥚 Ovos e Derivados</button>
+          <button onclick="filterChain('abelhas', this)" class="chain-btn px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer">🍯 Produtos de Abelhas</button>
+        </div>
+
+        <div class="space-y-4" id="chains-list">
+          <!-- 1. Carnes -->
+          <div data-chain="carnes" class="chain-card p-5 rounded-2xl border border-slate-200 bg-slate-50/70">
+            <div class="flex items-center gap-2.5 mb-2">
+              <span class="text-2xl">🥩</span>
+              <h3 class="font-bold text-slate-900 text-base">1. Estabelecimentos de Carnes e Derivados (Art. 12)</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700">
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">I - Abatedouro Frigorífico</strong>
+                Abate de espécies de açougue, recepção, manipulação, frio industrial e expedição. Exige inspeção veterinária <strong>permanente</strong>.
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">II - Unidade de Beneficiamento</strong>
+                Fábricas de embutidos, linguiças, salames, defumados, charque e cortes. Não realiza abate; recebe carne de abatedouro registrado.
+              </div>
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <strong class="text-amber-950 block mb-1">III - Beneficiamento junto ao Varejo</strong>
+                Vinculada a <strong>açougues ou supermercados</strong> para produzir carnes temperadas, empanadas, recheadas, moídas e hambúrgueres. <strong>Atenção:</strong> venda restrita ao varejo na própria unidade e suas filiais registradas em Camaquã!
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Leite -->
+          <div data-chain="leite" class="chain-card p-5 rounded-2xl border border-emerald-300 bg-emerald-50/40">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">🧀</span>
+                <h3 class="font-bold text-slate-900 text-base">2. Estabelecimentos de Leite e Derivados (Art. 15)</h3>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-950 text-[11px] font-bold">Destaque: Microqueijaria Artesanal</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-slate-700">
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">I - Granja Leiteira</strong>
+                Produção, pré-beneficiamento, beneficiamento e envase de leite próprio para consumo direto, podendo elaborar derivados lácteos exclusivos de sua produção.
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">II - Posto de Refrigeração</strong>
+                Unidade intermediária entre propriedades rurais e usinas de beneficiamento para seleção, filtração, refrigeração e expedição de leite cru refrigerado.
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">III - Unidade de Beneficiamento (Usina)</strong>
+                Recepção, pasteurização/tratamento térmico, envase de leite fluido e fabricação de queijos, iogurtes, doces e derivados lácteos em geral.
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">IV - Queijaria</strong>
+                Fabricação, maturação e expedição de queijos. Caso não realize o acabamento completo, deve encaminhar a uma Unidade de Beneficiamento registrada.
+              </div>
+              <div class="p-3 rounded-xl bg-amber-50 border-2 border-amber-400 md:col-span-2">
+                <strong class="text-amber-950 block mb-1">V - Microqueijaria (Art. 15, § 5º) — Regras Específicas:</strong>
+                Estabelecimento artesanal de pequeno porte com estrutura e equipamentos simplificados, destinado <strong>exclusivamente à fabricação de queijos artesanais</strong> com leite obtido em <strong>propriedade própria</strong>, com volume máximo de processamento de até <strong>250 litros/dia</strong>. <em>É terminantemente proibido receber leite de terceiros!</em> Todos os estabelecimentos lácteos devem manter plano de gerenciamento de resíduos e efluentes (soro/águas residuais).
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Pescado -->
+          <div data-chain="pescado" class="chain-card p-5 rounded-2xl border border-slate-200 bg-slate-50/70">
+            <div class="flex items-center gap-2.5 mb-2">
+              <span class="text-2xl">🐟</span>
+              <h3 class="font-bold text-slate-900 text-base">3. Estabelecimentos de Pescado e Derivados (Art. 13)</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-700">
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">I - Abatedouro Frigorífico de Pescado</strong>
+                Destinado ao abate de pescado (ex.: piscicultura), lavagem, evisceração, filetagem, congelamento, rotulagem e expedição.
+              </div>
+              <div class="p-3 rounded-xl bg-white border border-slate-200">
+                <strong class="text-emerald-900 block mb-1">II - Unidade de Beneficiamento de Pescado</strong>
+                Recepção, lavagem de pescado da produção primária, manipulação, industrialização e depuração de moluscos bivalves (com instalações próprias).
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Ovos -->
+          <div data-chain="ovos" class="chain-card p-5 rounded-2xl border border-slate-200 bg-slate-50/70">
+            <div class="flex items-center gap-2.5 mb-2">
+              <span class="text-2xl">🥚</span>
+              <h3 class="font-bold text-slate-900 text-base">4. Estabelecimentos de Ovos e Derivados (Art. 14)</h3>
+            </div>
+            <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-700">
+              <strong class="text-emerald-900 block mb-1">Unidade de Beneficiamento de Ovos e Derivados</strong>
+              Realiza recepção, <strong>ovoscopia</strong>, classificação por peso/qualidade, acondicionamento e expedição de ovos in natura ou industrializados. <em>Dica prática:</em> Se destinar-se apenas a ovos in natura, dispensa-se a área de industrialização; se receber ovos já classificados em estabelecimento registrado, a etapa de classificação é facultativa.
+            </div>
+          </div>
+
+          <!-- 5. Abelhas -->
+          <div data-chain="abelhas" class="chain-card p-5 rounded-2xl border border-slate-200 bg-slate-50/70">
+            <div class="flex items-center gap-2.5 mb-2">
+              <span class="text-2xl">🍯</span>
+              <h3 class="font-bold text-slate-900 text-base">5. Estabelecimentos de Produtos de Abelhas e Derivados (Art. 16)</h3>
+            </div>
+            <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-700">
+              <strong class="text-emerald-900 block mb-1">Unidade de Beneficiamento de Produtos de Abelhas (Casa do Mel)</strong>
+              Destinada à recepção, centrifugação/extração, decantação, filtração, classificação, envase e rotulagem de mel, própolis, pólen, geleia real e cera. Permite receber matéria-prima previamente extraída pelo apicultor em apiário ou entreposto de origem, desde que atendidas as condições higiênico-sanitárias.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 3: ROTEIRO DE REGISTRO, PEQUENO PORTE, REFORMAS E TRANSFER.-->
+      <!-- ================================================================= -->
+      <section id="modulo-3" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 03 • Arts. 19 ao 44</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Roteiro Completo de Registro, Reformas e Transferências</h2>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-xs sm:text-sm text-amber-950 mb-6 flex items-start gap-3">
+          <span class="text-xl">⚠️</span>
+          <div>
+            <strong>Regra de Ouro (Art. 19, § 1º):</strong> Nenhuma agroindústria ou fábrica pode iniciar a produção antes de receber o <strong>Título de Registro</strong> e a instalação oficial da inspeção pelo SIM. O processo completo tramita de forma digital no <strong>Programa Camaquã Na Era Digital</strong> e deve ser concluído em até <strong>6 meses</strong> (sob pena de arquivamento).
+          </div>
+        </div>
+
+        <!-- Linha do Tempo das 6 Etapas -->
+        <h3 class="font-bold text-slate-900 text-base mb-4">3.1. As 6 Etapas Obrigatórias para Obter o Registro</h3>
+        <div class="space-y-3 mb-8">
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">1</div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex-1">
+              <h4 class="font-bold text-slate-900 text-sm">Requerimento Eletrônico Inicial (Art. 20)</h4>
+              <p class="text-xs text-slate-600 mt-1">Preenchimento do Formulário de Solicitação digital dirigido ao Coordenador do SIM no sistema da Prefeitura de Camaquã.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">2</div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex-1">
+              <h4 class="font-bold text-slate-900 text-sm">Vistoria Prévia de Localização (Art. 21)</h4>
+              <p class="text-xs text-slate-600 mt-1"><strong>Antes de construir:</strong> A equipe do SIM vai ao terreno avaliar afastamento de fontes de mau cheiro/poluição, acessos pavimentados/cascalhados, disponibilidade de água potável, escoamento de efluentes e compatibilidade do fluxo para evitar contaminação cruzada.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">3</div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex-1">
+              <h4 class="font-bold text-slate-900 text-sm">Projetos Arquitetônicos e Licença Ambiental (Art. 22)</h4>
+              <p class="text-xs text-slate-600 mt-1">Envio digital das plantas baixas, projeto hidrossanitário (captação, reservatório, esgoto), planta com layout de equipamentos e barreiras sanitárias, planta com <strong>setas de fluxo</strong> de produção/colaboradores, cortes de fachada, planta de situação, Certidão de Zoneamento, Alvará e <strong>Licença ou Isenção Ambiental</strong>.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">4</div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex-1">
+              <h4 class="font-bold text-slate-900 text-sm">Documentação Jurídica, Memorial e ART (Art. 23)</h4>
+              <p class="text-xs text-slate-600 mt-1">RG/CPF, CNPJ (ou CPF/Talão de Produtor Rural para agroindústria familiar), contrato social/arrendamento, Inscrição Estadual, <strong>Memorial Econômico-Sanitário (MES)</strong>, <strong>ART do Responsável Técnico</strong> (Médico Veterinário) e Termo de Compromisso assinado.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-sm flex items-center justify-center shrink-0 mt-0.5">5</div>
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex-1">
+              <h4 class="font-bold text-slate-900 text-sm">Capacitação da Equipe e Saúde Ocupacional (Art. 24)</h4>
+              <p class="text-xs text-slate-600 mt-1">Curso de <strong>Boas Práticas de Fabricação (BPF)</strong> para todos os manipuladores (aceita treinamento interno ministrado pelo RT ou por <em>Manipulador Multiplicador</em>), curso de <strong>PAC</strong> para o RT e líder de produção, e <strong>Atestado de Saúde Ocupacional (ASO)</strong> vigente para cada manipulador.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3.5 items-start">
+            <div class="w-8 h-8 rounded-full bg-amber-500 text-emerald-950 font-extrabold text-sm flex items-center justify-center shrink-0 mt-0.5">6</div>
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 flex-1">
+              <h4 class="font-bold text-emerald-950 text-sm">Registro de Produtos/Rótulos e Vistoria Final (Arts. 25 e 28)</h4>
+              <p class="text-xs text-slate-700 mt-1">Aprovação dos formulários de produtos e artes de rótulos, pagamento da taxa via sistema, realização da <strong>Vistoria Final</strong> das obras concluídas, emissão do <strong>Título de Registro</strong> e início oficial da produção!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guias de Movimentação Cadastral -->
+        <h3 class="font-bold text-slate-900 text-base mb-3">3.2. Movimentações Cadastrais: Reformas, Transferências e Paralisações</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+            <h4 class="font-bold text-slate-900 text-sm mb-1.5">🏗️ Reformas e Ampliações (Arts. 41-44)</h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
+              <li><strong>Proibido iniciar obra sem aprovação prévia!</strong></li>
+              <li>Planta em escala 1:100 com <strong>convenção de cores obrigatória</strong>: <span class="font-bold text-slate-900">Preto</span> (conservar), <span class="font-bold text-rose-600">Vermelho</span> (construir/ampliar) e <span class="font-bold text-amber-600">Amarelo</span> (demolir).</li>
+              <li>Pequenas reformas sem alteração de fluxo ou volume podem usar apenas croqui e atualização do MES.</li>
+              <li><strong>Mudança de Endereço:</strong> Não é reforma! Exige cancelamento do registro antigo e abertura de processo novo completo.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+            <h4 class="font-bold text-slate-900 text-sm mb-1.5">🔄 Venda, Locação ou Arrendamento (Arts. 31-34)</h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
+              <li>Exige pedido prévio de transferência no SIM. Enquanto não deferida, o titular antigo continua responsável.</li>
+              <li>Se o comprador não regularizar em <strong>30 dias úteis</strong> após comunicação do vendedor, o registro é suspenso/cancelado.</li>
+              <li>Os rótulos antigos são cancelados, mas o SIM pode autorizar o uso do estoque remanescente por até <strong>180 dias</strong> mediante autorização do antigo dono e etiqueta sobreposta com os novos dados.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+            <h4 class="font-bold text-slate-900 text-sm mb-1.5">⏸️ Paralisação e Encerramento (Arts. 35-40)</h4>
+            <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4">
+              <li><strong>Paralisação Temporária:</strong> Até 180 dias, prorrogável uma única vez por igual período (máximo <strong>1 ano</strong>).</li>
+              <li><strong>Retomada:</strong> Exige requerimento formal e vistoria sanitária favorável antes de voltar a produzir.</li>
+              <li><strong>Cancelamento Definitivo:</strong> Exige quitação de taxas, comprovação de destino do estoque, destruição dos rótulos e entrega dos carimbos ao SIM.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 4: PRODUTOS, EMBALAGENS, ROTULAGEM E CARIMBOS              -->
+      <!-- ================================================================= -->
+      <section id="modulo-4" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 04 • Arts. 45 ao 67</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Registro de Produtos, Rotulagem e Carimbos Oficiais</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2">
+            <h3 class="font-bold text-slate-900 text-sm">4.1. Regras de Registro de Produto (Arts. 45-51)</h3>
+            <ul class="list-disc pl-4 space-y-1.5">
+              <li><strong>Prazo de Análise:</strong> Até <strong>30 dias úteis</strong> pelo SIM no sistema digital.</li>
+              <li><strong>Validade Indeterminada:</strong> Mantida enquanto o estabelecimento enviar os <strong>relatórios estatísticos mensais</strong>. Ficar 6 meses sem declarar produção suspende o produto; 1 ano cancela de ofício.</li>
+              <li><strong>Produtos Artesanais / Não Padronizados:</strong> Permitidos mediante justificativa técnica, histórico tradicional e garantia de inocuidade.</li>
+              <li><strong>Lote Experimental:</strong> Testes de novos produtos exigem comunicação prévia ao SIM informando escala e destinação.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-slate-700 space-y-2">
+            <h3 class="font-bold text-amber-950 text-sm">4.2. Advertências Obrigatórias Especiais (Arts. 58-62)</h3>
+            <ul class="list-disc pl-4 space-y-1.5">
+              <li><strong>Queijos/Derivados de Leite Cru:</strong> Deve constar no painel principal, em caixa alta e negrito: <strong>“ESTE PRODUTO FOI ELABORADO A PARTIR DE LEITE CRU”</strong>.</li>
+              <li><strong>Leite de Outras Espécies:</strong> Indicar expressamente a espécie (ex.: <em>Leite de Cabra, Ovelha ou Búfala</em>).</li>
+              <li><strong>Produtos de Abelhas (Mel, Própolis, Geleia Real):</strong> Advertência visível: <strong>“Este produto não deve ser consumido por crianças menores de um ano de idade”</strong>.</li>
+              <li><strong>Ovos de Outras Aves:</strong> Obrigatório destacar a espécie (ex.: codorna, pata) quando não for galinha.</li>
+              <li><strong>Proibições:</strong> Vedado qualquer termo medicinal/curativo ou figuras que induzam o consumidor a erro.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Galeria dos 5 Modelos Oficiais de Carimbo S.I.M. Camaquã-RS (Art. 65) -->
+        <h3 class="font-bold text-slate-900 text-base mb-3">4.3. Os 5 Modelos Oficiais de Carimbo do S.I.M. Camaquã-RS (Art. 65)</h3>
+        <p class="text-xs text-slate-600 mb-4">Prazo de até <strong>2 anos</strong> da publicação do Decreto para adequação das matrizes antigas aos novos padrões:</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Modelo 1: Elíptico 7x5 cm -->
+          <div class="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs flex flex-col items-center text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold mb-2">Modelo 1 • Elíptico (7 cm x 5 cm)</span>
+            <svg viewBox="0 0 300 215" class="w-40 h-36 mb-2">
+              <ellipse cx="150" cy="108" rx="134" ry="88" fill="none" stroke="#0f172a" stroke-width="4"/>
+              <text x="150" y="64" text-anchor="middle" font-family="serif" font-weight="800" font-size="16" fill="#0f172a">CAMAQUÃ-RS</text>
+              <text x="150" y="98" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="19" fill="#0f172a" letter-spacing="1.5">INSPECIONADO</text>
+              <text x="150" y="138" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="34" fill="#0f172a">000</text>
+              <text x="150" y="168" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="18" fill="#0f172a" letter-spacing="3">S.I.M.</text>
+            </svg>
+            <h4 class="font-bold text-slate-900 text-xs">Grandes Carcaças</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Bovinos, búfalos, equídeos e grandes animais de açougue.</p>
+          </div>
+
+          <!-- Modelo 2: Elíptico 5x3 cm -->
+          <div class="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs flex flex-col items-center text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold mb-2">Modelo 2 • Elíptico (5 cm x 3 cm)</span>
+            <svg viewBox="0 0 300 215" class="w-40 h-36 mb-2">
+              <ellipse cx="150" cy="108" rx="115" ry="70" fill="none" stroke="#0f172a" stroke-width="3.5"/>
+              <text x="150" y="72" text-anchor="middle" font-family="serif" font-weight="800" font-size="14" fill="#0f172a">CAMAQUÃ-RS</text>
+              <text x="150" y="100" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="16" fill="#0f172a" letter-spacing="1">INSPECIONADO</text>
+              <text x="150" y="132" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="28" fill="#0f172a">000</text>
+              <text x="150" y="158" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="15" fill="#0f172a" letter-spacing="2.5">S.I.M.</text>
+            </svg>
+            <h4 class="font-bold text-slate-900 text-xs">Pequenos Animais de Açougue</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Carcaças ou cortes primários de suínos, ovinos e caprinos.</p>
+          </div>
+
+          <!-- Modelo 3: Circular (Rótulos e Embalagens) -->
+          <div class="p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/30 shadow-xs flex flex-col items-center text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-bold mb-2">Modelo 3 • Circular (1 a 5 cm)</span>
+            <svg viewBox="0 0 300 300" class="w-36 h-36 mb-2">
+              <defs>
+                <path id="m3-top-out" d="M 36,150 A 114,114 0 1,1 264,150"/>
+                <path id="m3-bot-out" d="M 28,154 A 122,122 0 0,0 272,154"/>
+                <path id="m3-top-in" d="M 66,150 A 84,84 0 1,1 234,150"/>
+              </defs>
+              <circle cx="150" cy="150" r="106" fill="none" stroke="#0f172a" stroke-width="2.8"/>
+              <text fill="#0f172a" font-family="serif" font-weight="800" font-size="18.5" letter-spacing="1.1">
+                <textPath href="#m3-top-out" startOffset="50%" text-anchor="middle">SECRETARIA MUNICIPAL DE</textPath>
+              </text>
+              <text fill="#0f172a" font-family="serif" font-weight="800" font-size="18" letter-spacing="1">
+                <textPath href="#m3-bot-out" startOffset="50%" text-anchor="middle">DESENVOLVIMENTO RURAL</textPath>
+              </text>
+              <text fill="#0f172a" font-family="serif" font-weight="700" font-size="17" letter-spacing="1.2">
+                <textPath href="#m3-top-in" startOffset="50%" text-anchor="middle">CAMAQUÃ-RS</textPath>
+              </text>
+              <text x="150" y="158" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="17.5" fill="#0f172a" letter-spacing="1.8">INSPECIONADO</text>
+              <text x="150" y="198" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="32" fill="#0f172a">000</text>
+              <text x="150" y="230" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="19" fill="#0f172a" letter-spacing="3">S.I.M</text>
+            </svg>
+            <h4 class="font-bold text-slate-900 text-xs">Rótulos e Embalagens (Mais Usado)</h4>
+            <p class="text-[11px] text-slate-600 mt-1">1 cm (≤10 cm²), 2-3 cm (≤1 kg), 4 cm (1 a 10 kg) ou 5 cm (>10 kg).</p>
+          </div>
+
+          <!-- Modelo 4: Quadrado 7x7 cm -->
+          <div class="p-4 rounded-2xl border border-amber-300 bg-amber-50/30 shadow-xs flex flex-col items-center text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-bold mb-2">Modelo 4 • Quadrado (7 cm x 7 cm)</span>
+            <svg viewBox="0 0 260 260" class="w-36 h-36 mb-2">
+              <rect x="25" y="25" width="210" height="210" fill="none" stroke="#92400e" stroke-width="5"/>
+              <text x="130" y="68" text-anchor="middle" font-family="serif" font-weight="800" font-size="16" fill="#92400e">CAMAQUÃ-RS</text>
+              <text x="130" y="106" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="15" fill="#92400e">APROVEITAMENTO</text>
+              <text x="130" y="128" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="15" fill="#92400e">CONDICIONAL</text>
+              <text x="130" y="172" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="30" fill="#92400e">000</text>
+              <text x="130" y="206" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="18" fill="#92400e" letter-spacing="3">S.I.M.</text>
+            </svg>
+            <h4 class="font-bold text-slate-900 text-xs">Aproveitamento Condicional</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Carcaças, partes ou embalagens destinadas a tratamento térmico específico.</p>
+          </div>
+
+          <!-- Modelo 5: Retangular 7x6 cm -->
+          <div class="p-4 rounded-2xl border border-rose-300 bg-rose-50/30 shadow-xs flex flex-col items-center text-center">
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[11px] font-bold mb-2">Modelo 5 • Retangular (7 cm x 6 cm)</span>
+            <svg viewBox="0 0 280 240" class="w-36 h-36 mb-2">
+              <rect x="20" y="30" width="240" height="180" fill="none" stroke="#9f1239" stroke-width="5"/>
+              <text x="140" y="68" text-anchor="middle" font-family="serif" font-weight="800" font-size="16" fill="#9f1239">CAMAQUÃ-RS</text>
+              <text x="140" y="116" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="24" fill="#9f1239" letter-spacing="1.5">CONDENADO</text>
+              <text x="140" y="156" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="26" fill="#9f1239">000</text>
+              <text x="140" y="188" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="17" fill="#9f1239" letter-spacing="3">S.I.M.</text>
+            </svg>
+            <h4 class="font-bold text-slate-900 text-xs">Produtos Condenados</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Carcaças, órgãos e partes condenadas no abate para descarte/graxaria.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 5: HIGIENE, BPF E OS 19 ELEMENTOS DO PAC                   -->
+      <!-- ================================================================= -->
+      <section id="modulo-5" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 05 • Arts. 68 ao 93</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Higiene, Boas Práticas (BPF) e os 19 Elementos do PAC</h2>
+        </div>
+
+        <!-- Regras Práticas do Dia a Dia -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6 text-xs">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-lg block mb-1">💧</span>
+            <strong class="text-slate-900 block">Água e Gelo Potáveis</strong>
+            <p class="text-slate-600 mt-1">Monitoramento <strong>diário</strong> do cloro residual livre com registro em planilha. Caixas d'água lavadas <strong>semestralmente</strong> com laudos arquivados.</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-lg block mb-1">🌡️</span>
+            <strong class="text-slate-900 block">Esterilizador a 82,2 °C</strong>
+            <p class="text-slate-600 mt-1">Obrigatório nas linhas de abate e evisceração para sanitização constante de facas e utensílios com água corrente a no mínimo <strong>82,2 °C</strong> (Art. 87).</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-lg block mb-1">🚫</span>
+            <strong class="text-slate-900 block">Zero Madeira & Adornos</strong>
+            <p class="text-slate-600 mt-1">Proibido bancadas/utensílios de madeira ou porosos (Art. 81), presença de animais e uso de anéis, relógios, brincos ou esmaltes (Art. 75).</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="text-lg block mb-1">👕</span>
+            <strong class="text-slate-900 block">Uniformes & Saúde</strong>
+            <p class="text-slate-600 mt-1">Uniformes limpos, completos e claros; cores diferenciadas entre área suja e limpa. Afastamento imediato em caso de ferimentos ou doenças.</p>
+          </div>
+        </div>
+
+        <!-- Os 19 Elementos do PAC (Art. 89) -->
+        <div class="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 class="font-bold text-emerald-950 text-base">Os 19 Elementos dos Programas de Autocontrole (PAC — Art. 89)</h3>
+              <p class="text-xs text-slate-600">Registros devem ser arquivados por no mínimo <strong>1 ano</strong> (ou pela vida útil do produto, se maior) e revisados <strong>anualmente</strong>. Agroindústrias familiares podem usar modelos simplificados do SIM/EMATER.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>01.</strong> Manutenção de Instalações e Equipamentos</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>02.</strong> Ventilação, Exaustão e Qualidade do Ar</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>03.</strong> Iluminação Adequada e Protegida</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>04.</strong> Potabilidade e Abastecimento de Água</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>05.</strong> Manejo de Águas Residuais e Efluentes</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>06.</strong> Controle Integrado de Vetores e Pragas</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>07.</strong> Limpeza e Sanitização (PPHO)</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>08.</strong> Higiene, Hábitos, Vestuário e Saúde (ASO)</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>09.</strong> Procedimentos Sanitários Operacionais (PSO)</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>10.</strong> Controle de Matérias-Primas e Embalagens</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>11.</strong> Controle de Temperaturas e Cadeia do Frio</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>12.</strong> Calibração e Aferição de Instrumentos</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>13.</strong> Análises Microbiológicas e Físico-Químicas</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>14.</strong> Manejo Pré-Abate e Abate Humanitário</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>15.</strong> Sistema de Rastreabilidade e Recall</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>16.</strong> Capacitação e Treinamento Contínuo</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>17.</strong> Prevenção de Fraudes e Defesa (Food Defense)</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100"><strong>18.</strong> Análise de Perigos e Pontos Críticos (APPCC)</div>
+            <div class="p-2.5 rounded-xl bg-white border border-emerald-100 sm:col-span-2 lg:col-span-1"><strong>19.</strong> Segregação de Material Específico de Risco (MER)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 6: INSPEÇÃO, REINSPEÇÃO E ANÁLISES LABORATORIAIS           -->
+      <!-- ================================================================= -->
+      <section id="modulo-6" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 06 • Arts. 93 ao 114</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Inspeção, Reinspeção e Análises Laboratoriais</h2>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs sm:text-sm text-rose-950 mb-6">
+          <strong>❄️ Regra Absoluta da Cadeia do Frio (Art. 98):</strong> Em caso de quebra da cadeia do frio ou perda de conservação térmica, é <strong>terminantemente proibido tentar recuperar a temperatura</strong> (recongelar ou resfriar corretivamente). O produto será apreendido e destinado à inutilização ou aproveitamento condicional.
+        </div>
+
+        <h3 class="font-bold text-slate-900 text-base mb-3">6.1. Como funciona a Coleta Fiscal em Triplicata e a Contraprova (Arts. 103-107)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5 text-xs">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="font-extrabold text-emerald-800 uppercase block mb-1">1ª Via: Amostra Fiscal</span>
+            Enviada pelo SIM ao laboratório oficial ou credenciado para o ensaio inicial. Custos das análises oficiais do cronograma correm por conta do estabelecimento.
+          </div>
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <span class="font-extrabold text-amber-900 uppercase block mb-1">2ª Via: Contraprova (Produtor)</span>
+            Fica sob guarda do estabelecimento, que deve conservá-la perfeitamente com o <strong>lacre intacto</strong>. Se violada ou mal conservada, perde o direito à perícia!
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span class="font-extrabold text-sky-900 uppercase block mb-1">3ª Via: Testemunha (SIM)</span>
+            Mantida sob custódia oficial para desempate definitivo caso o resultado da contraprova divirja da amostra fiscal inicial.
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+          <p><strong>Exceções à coleta em triplicata (amostra única definitiva):</strong> Produtos com prazo de validade inferior a <strong>45 dias</strong>, análises microbiológicas (agentes mutáveis) ou volume insuficiente.</p>
+          <p><strong>Em caso de resultado não conforme:</strong> O lote é suspenso cautelarmente, ocorre o <em>recall</em>, a empresa tem <strong>5 dias úteis</strong> para entregar Plano de Ação Corretiva, <strong>48 horas</strong> para requerer perícia de contraprova (indicando assistente técnico) e só retoma a produção após aprovação em <strong>Teste para Liberação (TL)</strong>.</p>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 7: TRÂNSITO DE PRODUTOS E COMERCIALIZAÇÃO                  -->
+      <!-- ================================================================= -->
+      <section id="modulo-7" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-extrabold uppercase">Módulo 07 • Arts. 115 ao 120</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Trânsito de Produtos e Condições de Transporte</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-slate-700">
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900">Requisitos do Veículo e Carga</h3>
+            <ul class="list-disc pl-4 space-y-1 text-xs">
+              <li>Compartimento de carga fechado, de material liso, impermeável e higienizado antes de cada carregamento.</li>
+              <li>Monitoramento de temperatura integrado ao PAC, registrando placa do veículo, temperatura na expedição e confirmação de entrega.</li>
+              <li><strong>Proibição de carga mista:</strong> Jamais transportar alimentos junto com animais vivos, agrotóxicos, produtos químicos ou de limpeza.</li>
+            </ul>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <h3 class="font-bold text-slate-900">Documentação e Lacres Oficiais</h3>
+            <ul class="list-disc pl-4 space-y-1 text-xs">
+              <li>Toda carga deve circular acompanhada de <strong>Documento Fiscal</strong> e documentos sanitários oficiais (GTA para animais vivos na recepção).</li>
+              <li><strong>Transporte a granel (leite em tanques / carcaças):</strong> Obrigatório uso de <strong>lacre oficial numerado com chancela do SIM</strong> nas válvulas e escotilhas.</li>
+              <li><strong>Destinação à graxaria ou aproveitamento condicional:</strong> Exige Certificado Sanitário emitido pelo SIM, lacre oficial e comprovação de recebimento no destino.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- MÓDULO 8: INFRAÇÕES, PENALIDADES, URMs E PROCESSO ADMINISTRATIVO  -->
+      <!-- ================================================================= -->
+      <section id="modulo-8" class="searchable-module bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-xl bg-rose-100 text-rose-900 text-xs font-extrabold uppercase">Módulo 08 • Arts. 121 ao 143</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Infrações, Gradação de Multas (URMs) e Processo Administrativo</h2>
+        </div>
+
+        <!-- Tabela das 4 Classes de Gravidade (Art. 130 e 132) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6 text-xs">
+          <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200">
+            <span class="font-extrabold text-sky-900 uppercase block">Infrações Leves</span>
+            <p class="text-lg font-extrabold text-sky-950 my-1">10 a 50 URMs</p>
+            <p class="text-slate-600">Incisos I a VIII, XXXIII e XXXIV do Art. 129 (ex.: reforma sem aprovação, atraso no cronograma de análises, rótulo incompleto). Admite advertência para primário sem dolo.</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <span class="font-extrabold text-amber-900 uppercase block">Infrações Moderadas</span>
+            <p class="text-lg font-extrabold text-amber-950 my-1">51 a 150 URMs</p>
+            <p class="text-slate-600">Incisos IX a XVII, XXXVII e XXXVIII (ex.: falhas de higiene operacional, falta de procedência, desacordo com RTIQ, não entregar plano de ação em 5 dias úteis).</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-orange-50 border border-orange-200">
+            <span class="font-extrabold text-orange-900 uppercase block">Infrações Graves</span>
+            <p class="text-lg font-extrabold text-orange-950 my-1">151 a 300 URMs</p>
+            <p class="text-slate-600">Incisos XVIII a XXIV e XXXV (ex.: produto vencido, quebra do frio, fraude em planilhas/laudos, adulteração, venda fora do município sem SUSAF/SISBI).</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200">
+            <span class="font-extrabold text-rose-900 uppercase block">Infrações Gravíssimas</span>
+            <p class="text-lg font-extrabold text-rose-950 my-1">301 a 500 URMs</p>
+            <p class="text-slate-600">Incisos XXV a XXXII e XXXVI (ex.: embaraço/desacato ao fiscal, risco à saúde pública, uso de matéria-prima condenada, violação de lacre cautelar).</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 mb-6">
+          <strong>🌱 Benefício SUSAF-RS (Art. 132, § 3º):</strong> Agroindústrias familiares, rurais ou de pequeno porte aderidas ao <strong>SUSAF-RS</strong> têm <strong>redução de até 50% no valor das multas</strong>, desde que comprovem boa-fé e ausência de risco iminente à saúde pública.
+        </div>
+
+        <!-- Fluxo do Processo Administrativo Sanitário (PAS) -->
+        <h3 class="font-bold text-slate-900 text-base mb-3">8.1. Fluxo de Defesa, TAC e Recursos no PAS (Arts. 134-143)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <strong class="text-emerald-900 block mb-1">1. Auto de Infração Digital</strong>
+            Lavrado no sistema eletrônico. Abre prazo de <strong>15 dias</strong> para defesa escrita e juntada de provas.
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <strong class="text-emerald-900 block mb-1">2. Julgamento 1ª Instância</strong>
+            Instruído por Relatório do fiscal relator e julgado pelo <strong>Coordenador do SIM</strong>.
+          </div>
+          <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+            <strong class="text-amber-950 block mb-1">3. Termo de Ajustamento (TAC)</strong>
+            Pode suspender o processo antes da decisão de 1ª instância para adequações complexas em infrações graves (vedado para leves, gravíssimas ou fraude reincidente).
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <strong class="text-emerald-900 block mb-1">4. Recurso 2ª Instância</strong>
+            Prazo de <strong>15 dias</strong> (protocolo eletrônico até 23h59) à <strong>Junta de Revisão Administrativa</strong> (Secretário SMDR + Veterinário + Procuradoria). Pagamento em 30 dias após trânsito em julgado.
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- CENTRAL DE FERRAMENTAS PRÁTICAS, SIMULADORES E CHECKLISTS         -->
+      <!-- ================================================================= -->
+      <section id="ferramentas-praticas" class="searchable-module space-y-8">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-xl bg-amber-100 text-amber-950 text-xs font-extrabold uppercase">Ferramentas Interativas</span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Simuladores, Gerador de Rótulo e Checklists Oficiais</h2>
+        </div>
+
+        <!-- 1. Simulador de Enquadramento de Pequeno Porte (Art. 29) -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <h3 class="font-bold text-slate-900 text-lg mb-1">1. Calculadora de Área Útil & Enquadramento Pequeno Porte (Art. 29)</h3>
+          <p class="text-xs sm:text-sm text-slate-600 mb-4">
+            Conforme o Art. 29, § 1º, no cálculo dos <strong>250 m² máximos</strong> de área útil construída <strong>não são computados</strong> vestiários, sanitários, escritórios, refeitórios, depósitos de embalagens e circulação externa. Calcule abaixo:
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Área Total Construída (m²)</label>
+              <input type="number" id="area-total" value="280" min="1" oninput="calcularEnquadramento()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Área de Anexos Excluídos (m²)</label>
+              <input type="number" id="area-anexos" value="65" min="0" oninput="calcularEnquadramento()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+              <span class="text-[10px] text-slate-500">Vestiários, sanitários, escritório, emb.</span>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Perfil do Produtor</label>
+              <select id="perfil-produtor" onchange="calcularEnquadramento()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm">
+                <option value="familiar">Agricultor Familiar / Produtor Rural</option>
+                <option value="urbano">Microempreendedor Urbano (Equivalente)</option>
+                <option value="empresa">Empresa Convencional</option>
+              </select>
+            </div>
+            <div class="flex items-center">
+              <div id="resultado-area-util" class="w-full p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Calculadora de Diâmetro do Carimbo Modelo 3 (Art. 65, III) -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <h3 class="font-bold text-slate-900 text-lg mb-1">2. Calculadora de Tamanho do Carimbo Circular Modelo 3 (Art. 65, III)</h3>
+          <p class="text-xs sm:text-sm text-slate-600 mb-4">Descubra o diâmetro exato exigido para o selo do S.I.M. Camaquã-RS na arte do seu rótulo:</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">Peso Líquido ou Área de Rotulagem</label>
+              <select id="calc-carimbo-select" onchange="atualizarCalcCarimbo()" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm">
+                <option value="pequena">Embalagem pequena (área de rotulagem ≤ 10 cm²)</option>
+                <option value="ate1kg" selected>Embalagem com peso líquido até 1 kg</option>
+                <option value="1a10kg">Embalagem com peso líquido superior a 1 kg até 10 kg</option>
+                <option value="mais10kg">Embalagem com peso líquido superior a 10 kg ou sacarias</option>
+              </select>
+            </div>
+            <div id="calc-carimbo-output" class="p-4 rounded-xl bg-white border border-emerald-200">
+              <span class="text-[11px] font-bold uppercase text-emerald-700 block">Diâmetro Obrigatório (Modelo 3):</span>
+              <p class="text-lg font-extrabold text-slate-900">2 cm ou 3 cm de diâmetro</p>
+              <p class="text-xs text-slate-600 mt-0.5">Deve conter "CAMAQUÃ-RS", "INSPECIONADO", número do registro e "S.I.M." em cor contrastante.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Gerador Visual de Prévia de Rótulo Obrigatório (Arts. 54 e 58-62) -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <h3 class="font-bold text-slate-900 text-lg mb-1">3. Montador de Prévia Esquemática de Rótulo (Art. 54)</h3>
+          <p class="text-xs sm:text-sm text-slate-600 mb-4">Preencha os dados básicos do seu produto para visualizar os elementos obrigatórios que devem constar na embalagem:</p>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Denominação Oficial de Venda (RTIQ)</label>
+                <input type="text" id="rot-nome" value="QUEIJO COLONIAL ARTESANAL" oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Registro S.I.M. Nº</label>
+                  <input type="text" id="rot-sim" value="014" maxlength="5" oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+                </div>
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Peso Líquido</label>
+                  <input type="text" id="rot-peso" value="500 g" oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+                </div>
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Razão Social / Produtor e CNPJ/CPF</label>
+                <input type="text" id="rot-empresa" value="Agroindústria Familiar Boa Vista • CPF 000.000.000-00 • Camaquã/RS" oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Ingredientes (Ordem Decrescente) e Alergênicos</label>
+                <input type="text" id="rot-ing" value="Leite cru integral, coalho e cloreto de sódio (sal). ALÉRGICOS: CONTÉM LEITE. CONTÉM LACTOSE. NÃO CONTÉM GLÚTEN." oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Advertência Especial</label>
+                  <select id="rot-adv" onchange="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+                    <option value="leite_cru" selected>Elaborado a partir de Leite Cru</option>
+                    <option value="mel">Produto de Abelhas (< 1 ano)</option>
+                    <option value="nenhuma">Nenhuma advertência especial</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Conservação</label>
+                  <input type="text" id="rot-cons" value="Manter resfriado de 1 °C a 8 °C" oninput="renderRotuloPreview()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+                </div>
+              </div>
+            </div>
+
+            <!-- Espelho Esquemático do Rótulo -->
+            <div class="border-2 border-dashed border-slate-400 rounded-2xl p-5 bg-amber-50/30 flex flex-col justify-between text-xs">
+              <div>
+                <div class="flex items-start justify-between gap-3 border-b border-slate-300 pb-3">
+                  <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Painel Principal</span>
+                    <h4 id="prev-nome" class="text-lg font-extrabold text-slate-900 mt-0.5">QUEIJO COLONIAL ARTESANAL</h4>
+                    <p id="prev-adv" class="mt-1.5 inline-block px-2 py-1 rounded bg-slate-900 text-white font-extrabold text-[11px]">
+                      ESTE PRODUTO FOI ELABORADO A PARTIR DE LEITE CRU
+                    </p>
+                  </div>
+                  <!-- Selo Dinâmico -->
+                  <div class="w-20 h-20 shrink-0 rounded-full border-2 border-slate-900 bg-white flex flex-col items-center justify-center text-center p-1">
+                    <span class="text-[7px] font-bold leading-none">CAMAQUÃ-RS</span>
+                    <span class="text-[8px] font-extrabold leading-tight mt-0.5">INSPECIONADO</span>
+                    <span id="prev-sim-num" class="text-sm font-black leading-none my-0.5">014</span>
+                    <span class="text-[8px] font-bold leading-none">S.I.M.</span>
+                  </div>
+                </div>
+
+                <div class="mt-3 space-y-2 text-slate-700">
+                  <p><strong>Ingredientes e Alergênicos:</strong> <span id="prev-ing">Leite cru integral, coalho e cloreto de sódio (sal). ALÉRGICOS: CONTÉM LEITE. CONTÉM LACTOSE. NÃO CONTÉM GLÚTEN.</span></p>
+                  <p><strong>Conservação:</strong> <span id="prev-cons">Manter resfriado de 1 °C a 8 °C</span></p>
+                  <p><strong>Fabricante:</strong> <span id="prev-empresa">Agroindústria Familiar Boa Vista • CPF 000.000.000-00 • Camaquã/RS</span> — <strong>Indústria Brasileira</strong></p>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-300 flex items-center justify-between font-bold text-slate-900">
+                <span>PESO LÍQUIDO: <span id="prev-peso">500 g</span></span>
+                <span class="text-[11px] text-slate-600">FAB: __/__/2026 | VAL: __/__/2026 | LOTE: ____</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Checklists Interativos Persistentes (localStorage) -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg">4. Checklists Interativos de Autoavaliação (Salvos no Navegador)</h3>
+              <p class="text-xs text-slate-600">Marque os itens já providenciados. O progresso fica salvo automaticamente neste dispositivo.</p>
+            </div>
+            <button onclick="resetAllChecklists()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-xs font-bold transition cursor-pointer">
+              Resetar Checklists
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-bold text-emerald-900 text-sm mb-2.5">📋 Checklist A — Documentação & Registro (Arts. 20-25)</h4>
+              <div id="checklist-doc-container" class="space-y-2"></div>
+            </div>
+            <div>
+              <h4 class="font-bold text-emerald-900 text-sm mb-2.5">🧼 Checklist B — Boas Práticas & Rotina Sanitária (Arts. 68-92)</h4>
+              <div id="checklist-bpf-container" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- CONTATO OFICIAL SMDR / S.I.M. CAMAQUÃ-RS                          -->
+      <!-- ================================================================= -->
+      <footer class="bg-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-lg">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div class="space-y-1.5">
+            <span class="text-xs font-bold uppercase tracking-widest text-amber-400">Atendimento Oficial ao Produtor</span>
+            <h3 class="text-xl font-extrabold">Secretaria Municipal de Desenvolvimento Rural (SMDR)</h3>
+            <p class="text-xs sm:text-sm text-emerald-200">Serviço de Inspeção Municipal (S.I.M.) — Prefeitura Municipal de Camaquã/RS</p>
+            <p class="text-xs text-emerald-300 pt-1">Protocolo Eletrônico: Sistema Oficial <strong>Programa Camaquã Na Era Digital</strong> (Decreto nº 25.474/2022).</p>
+          </div>
+          <div class="flex flex-wrap gap-3 no-print">
+            <button onclick="replayIntro()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition cursor-pointer">
+              Rever Abertura Oficial
+            </button>
+            <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-emerald-950 text-xs font-extrabold transition cursor-pointer">
+              Imprimir / Salvar PDF
+            </button>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT: ABERTURA CANVAS, FILTROS, BUSCA E SIMULADORES            -->
+  <!-- ===================================================================== -->
+  <script>
+    // =========================================================================
+    // 1. VINHETA DE ABERTURA CINEMATOGRÁFICA (CANVAS PARTÍCULAS + ONDAS)
+    // =========================================================================
+    const introOverlay = document.getElementById('intro-overlay');
+    const introCanvas = document.getElementById('intro-canvas');
+    const ctx = introCanvas.getContext('2d');
+    let introAnimId = null;
+    let introAutoCloseTimer = null;
+    let particles = [];
+    let ripples = [];
+    let frameCount = 0;
+
+    function resizeIntroCanvas() {
+      if (!introCanvas) return;
+      introCanvas.width = window.innerWidth;
+      introCanvas.height = window.innerHeight;
+    }
+
+    class SanitaryParticle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * introCanvas.width;
+        this.y = Math.random() * introCanvas.height;
+        this.radius = Math.random() * 2.4 + 0.8;
+        this.vx = (Math.random() - 0.5) * 0.45;
+        this.vy = -Math.random() * 0.6 - 0.15;
+        this.alpha = Math.random() * 0.55 + 0.15;
+        this.isGold = Math.random() > 0.72;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.y < -10 || this.x < -10 || this.x > introCanvas.width + 10) {
+          this.reset();
+          this.y = introCanvas.height + 10;
+        }
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.isGold
+          ? `rgba(251, 191, 36, ${this.alpha})`
+          : `rgba(110, 231, 183, ${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    function initIntroAnimation() {
+      resizeIntroCanvas();
+      particles = Array.from({ length: 65 }, () => new SanitaryParticle());
+      ripples = [];
+      frameCount = 0;
+      if (introAnimId) cancelAnimationFrame(introAnimId);
+
+      function renderIntro() {
+        ctx.clearRect(0, 0, introCanvas.width, introCanvas.height);
+        frameCount++;
+
+        if (frameCount % 85 === 1) {
+          ripples.push({ radius: 110, alpha: 0.35 });
+        }
+
+        const cx = introCanvas.width / 2;
+        const cy = introCanvas.height / 2 - 45;
+
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const r = ripples[i];
+          r.radius += 1.45;
+          r.alpha -= 0.0022;
+          if (r.alpha <= 0) {
+            ripples.splice(i, 1);
+            continue;
+          }
+          ctx.beginPath();
+          ctx.arc(cx, cy, r.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(52, 211, 153, ${r.alpha})`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        for (const p of particles) {
+          p.update();
+          p.draw();
+        }
+        introAnimId = requestAnimationFrame(renderIntro);
+      }
+      renderIntro();
+    }
+
+    function startIntroTimer() {
+      clearTimeout(introAutoCloseTimer);
+      const progressBar = document.getElementById('intro-progress');
+      if (progressBar) {
+        progressBar.style.animation = 'none';
+        progressBar.offsetHeight;
+        progressBar.style.animation = 'progressFill 5.2s linear forwards';
+      }
+      introAutoCloseTimer = setTimeout(() => closeIntro(), 5400);
+    }
+
+    function closeIntro() {
+      clearTimeout(introAutoCloseTimer);
+      introOverlay.classList.add('intro-hidden');
+      setTimeout(() => {
+        if (introAnimId) {
+          cancelAnimationFrame(introAnimId);
+          introAnimId = null;
+        }
+      }, 900);
+    }
+
+    function replayIntro() {
+      const sidebar = document.getElementById('sidebar-nav');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (sidebar && !sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+      const seal = introOverlay.querySelector('.seal-container');
+      const textBlock = introOverlay.querySelector('.intro-text-block');
+      if (seal) {
+        seal.style.animation = 'none';
+        seal.offsetHeight;
+        seal.style.animation = 'sealEntrance 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards';
+      }
+      if (textBlock) {
+        textBlock.style.animation = 'none';
+        textBlock.offsetHeight;
+        textBlock.style.animation = 'textRise 1s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards';
+      }
+      introOverlay.classList.remove('intro-hidden');
+      initIntroAnimation();
+      startIntroTimer();
+    }
+
+    window.addEventListener('resize', resizeIntroCanvas);
+
+    // =========================================================================
+    // 2. MENU MOBILE
+    // =========================================================================
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarNav = document.getElementById('sidebar-nav');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+    function toggleMobileMenu() {
+      sidebarNav.classList.toggle('-translate-x-full');
+      sidebarBackdrop.classList.toggle('hidden');
+    }
+    if (menuToggle) menuToggle.addEventListener('click', toggleMobileMenu);
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', toggleMobileMenu);
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 1024) {
+          sidebarNav.classList.add('-translate-x-full');
+          sidebarBackdrop.classList.add('hidden');
+        }
+      });
+    });
+
+    // =========================================================================
+    // 3. BUSCA EM TEMPO REAL
+    // =========================================================================
+    const searchInput = document.getElementById('manual-search');
+    const clearSearchBtn = document.getElementById('clear-search');
+    const searchStatus = document.getElementById('search-status');
+    const modules = document.querySelectorAll('.searchable-module');
+
+    searchInput.addEventListener('input', function () {
+      const term = this.value.trim().toLowerCase();
+      if (!term) {
+        clearSearch();
+        return;
+      }
+      clearSearchBtn.classList.remove('hidden');
+      let visibleCount = 0;
+      modules.forEach(mod => {
+        if (mod.textContent.toLowerCase().includes(term)) {
+          mod.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          mod.classList.add('hidden');
+        }
+      });
+      searchStatus.classList.remove('hidden');
+      searchStatus.textContent = visibleCount > 0
+        ? `Exibindo ${visibleCount} seção(ões) correspondente(s) a "${this.value}".`
+        : `Nenhum resultado encontrado para "${this.value}".`;
+    });
+
+    function clearSearch() {
+      searchInput.value = '';
+      clearSearchBtn.classList.add('hidden');
+      searchStatus.classList.add('hidden');
+      modules.forEach(mod => mod.classList.remove('hidden'));
+    }
+
+    // =========================================================================
+    // 4. FILTRO POR CADEIA PRODUTIVA (MÓDULO 2)
+    // =========================================================================
+    function filterChain(chain, btn) {
+      document.querySelectorAll('.chain-btn').forEach(b => {
+        b.classList.remove('bg-emerald-800', 'text-white');
+        b.classList.add('bg-slate-100', 'text-slate-700');
+      });
+      btn.classList.remove('bg-slate-100', 'text-slate-700');
+      btn.classList.add('bg-emerald-800', 'text-white');
+
+      document.querySelectorAll('.chain-card').forEach(card => {
+        if (chain === 'todas' || card.dataset.chain === chain) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    // =========================================================================
+    // 5. SIMULADOR DE ÁREA ÚTIL E ENQUADRAMENTO PEQUENO PORTE (ART. 29)
+    // =========================================================================
+    function calcularEnquadramento() {
+      const total = parseFloat(document.getElementById('area-total').value) || 0;
+      const anexos = parseFloat(document.getElementById('area-anexos').value) || 0;
+      const perfil = document.getElementById('perfil-produtor').value;
+      const areaUtil = Math.max(0, total - anexos);
+      const box = document.getElementById('resultado-area-util');
+
+      if (areaUtil <= 250 && (perfil === 'familiar' || perfil === 'urbano')) {
+        box.className = 'w-full p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs';
+        box.innerHTML = `<strong>✅ Enquadrável (Área Útil: ${areaUtil} m²):</strong> Atende ao limite ≤ 250 m² do Art. 29 (descontados ${anexos} m² de anexos). ${perfil === 'urbano' ? 'Sujeito à avaliação caso a caso pelo SIM.' : 'Direito a normas simplificadas e apoio técnico gratuito.'}`;
+      } else {
+        box.className = 'w-full p-3 rounded-xl bg-amber-100 border border-amber-300 text-amber-950 text-xs';
+        box.innerHTML = `<strong>⚠️ Rito Convencional (Área Útil: ${areaUtil} m²):</strong> ${areaUtil > 250 ? 'A área útil ultrapassa o limite de 250 m².' : 'Perfil empresarial convencional.'} Seguirá os requisitos estruturais padrão do SIM.`;
+      }
+    }
+
+    // =========================================================================
+    // 6. CALCULADORA DO CARIMBO MODELO 3 (ART. 65, III)
+    // =========================================================================
+    function atualizarCalcCarimbo() {
+      const val = document.getElementById('calc-carimbo-select').value;
+      const out = document.getElementById('calc-carimbo-output');
+      const dados = {
+        pequena: { d: '1 cm de diâmetro (admitida redução proporcional)', info: 'Para embalagens pequenas com área de rotulagem igual ou inferior a 10 cm², mantendo legibilidade do número.' },
+        ate1kg: { d: '2 cm ou 3 cm de diâmetro', info: 'Padrão para embalagens comerciais com peso líquido de até 1 kg.' },
+        '1a10kg': { d: '4 cm de diâmetro', info: 'Para embalagens com peso líquido superior a 1 kg até 10 kg.' },
+        mais10kg: { d: '5 cm de diâmetro', info: 'Para embalagens com peso líquido superior a 10 kg, fardos ou sacarias.' }
+      };
+      out.innerHTML = `
+        <span class="text-[11px] font-bold uppercase text-emerald-700 block">Diâmetro Obrigatório (Modelo 3):</span>
+        <p class="text-lg font-extrabold text-slate-900">${dados[val].d}</p>
+        <p class="text-xs text-slate-600 mt-0.5">${dados[val].info}</p>
+      `;
+    }
+
+    // =========================================================================
+    // 7. GERADOR DE PRÉVIA DE RÓTULO (ART. 54)
+    // =========================================================================
+    function renderRotuloPreview() {
+      document.getElementById('prev-nome').textContent = document.getElementById('rot-nome').value || 'DENOMINAÇÃO DO PRODUTO';
+      document.getElementById('prev-sim-num').textContent = document.getElementById('rot-sim').value || '000';
+      document.getElementById('prev-peso').textContent = document.getElementById('rot-peso').value || '---';
+      document.getElementById('prev-empresa').textContent = document.getElementById('rot-empresa').value || '---';
+      document.getElementById('prev-ing').textContent = document.getElementById('rot-ing').value || '---';
+      document.getElementById('prev-cons').textContent = document.getElementById('rot-cons').value || '---';
+
+      const adv = document.getElementById('rot-adv').value;
+      const prevAdv = document.getElementById('prev-adv');
+      if (adv === 'leite_cru') {
+        prevAdv.classList.remove('hidden');
+        prevAdv.textContent = 'ESTE PRODUTO FOI ELABORADO A PARTIR DE LEITE CRU';
+      } else if (adv === 'mel') {
+        prevAdv.classList.remove('hidden');
+        prevAdv.textContent = 'Este produto não deve ser consumido por crianças menores de um ano de idade';
+      } else {
+        prevAdv.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 8. CHECKLISTS INTERATIVOS PERSISTENTES (LOCALSTORAGE)
+    // =========================================================================
+    const checklistDocItems = [
+      'Requerimento Eletrônico no sistema Camaquã Na Era Digital (Art. 20)',
+      'Laudo favorável da Vistoria Prévia de localização e terreno (Art. 21)',
+      'Plantas baixas, hidrossanitária, equipamentos, cortes e setas de fluxo (Art. 22)',
+      'Certidão de Zoneamento, Alvará e Licença ou Isenção Ambiental (Art. 22)',
+      'RG/CPF, CNPJ ou Talão de Produtor Rural / Inscrição Estadual (Art. 23)',
+      'Memorial Econômico-Sanitário (MES) e Termo de Compromisso (Art. 23)',
+      'ART do Responsável Técnico (Médico Veterinário) (Art. 23, VI)',
+      'Certificados BPF da equipe, curso PAC da liderança e ASOs vigentes (Art. 24)'
+    ];
+
+    const checklistBpfItems = [
+      'Cloração da água controlada diariamente e limpeza semestral das caixas d\'água (Arts. 83/92)',
+      'Planilhas auditáveis dos Programas de Autocontrole (PAC) implantadas (Art. 88)',
+      'Uniformes limpos de cor clara e proibição total de adornos na produção (Arts. 74/75)',
+      'Ausência de madeira ou materiais porosos nas áreas de manipulação (Art. 81)',
+      'Controle integrado de vetores e pragas urbanas atualizado (Art. 72)',
+      'Monitoramento contínuo de temperaturas de câmaras e cadeia do frio (Art. 85)',
+      'Rótulos aprovados no SIM com carimbo oficial (Modelos 1 a 5) e advertências (Arts. 54/65)',
+      'Veículos de transporte higienizados e sem carga mista contaminante (Art. 116)'
+    ];
+
+    const STORAGE_KEY = 'sim_camaqua_manual_v2_2026';
+
+    function renderChecklists() {
+      let state = {};
+      try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { state = {}; }
+
+      const renderList = (items, prefix, containerId) => {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        items.forEach((text, i) => {
+          const key = `${prefix}_${i}`;
+          const checked = !!state[key];
+          const label = document.createElement('label');
+          label.className = `flex items-start gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition ${
+            checked ? 'bg-emerald-50 border-emerald-300 text-emerald-950' : 'bg-slate-50 border-slate-200 hover:border-emerald-300 text-slate-700'
+          }`;
+          label.innerHTML = `
+            <input type="checkbox" ${checked ? 'checked' : ''} class="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <span class="${checked ? 'line-through opacity-80' : ''}">${text}</span>
+          `;
+          label.querySelector('input').addEventListener('change', (e) => {
+            state[key] = e.target.checked;
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) {}
+            renderChecklists();
+          });
+          container.appendChild(label);
+        });
+      };
+
+      renderList(checklistDocItems, 'doc', 'checklist-doc-container');
+      renderList(checklistBpfItems, 'bpf', 'checklist-bpf-container');
+
+      const total = checklistDocItems.length + checklistBpfItems.length;
+      const done = Object.values(state).filter(Boolean).length;
+      const pct = Math.round((done / total) * 100);
+      document.getElementById('sidebar-progress-text').textContent = `${pct}% (${done}/${total})`;
+      document.getElementById('sidebar-progress-bar').style.width = `${pct}%`;
+    }
+
+    function resetAllChecklists() {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      renderChecklists();
+    }
+
+    window.onload = function () {
+      initIntroAnimation();
+      startIntroTimer();
+      calcularEnquadramento();
+      atualizarCalcCarimbo();
+      renderRotuloPreview();
+      renderChecklists();
+    };
+  </script>
+</body>
+</html>
